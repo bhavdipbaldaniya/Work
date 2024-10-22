@@ -1,0 +1,685 @@
+import PageLayout from "@/Component/Layout/PageLayout";
+import PageHeader from "@/Component/Heders/PageHeader";
+import { useEffect, useRef, useState } from "react";
+import style from "./withdrow.module.css";
+import DataTable from "datatables.net";
+import $ from "jquery";
+import { useRouter } from "next/navigation";
+import {
+  useUserWithdrawalMutation,
+  useWithdrawalReqMutation,
+} from "../../../../services/admin/adminTransactionApi";
+import TableLengthElement from "@/Component/FormElement/TableLengthElement";
+import ActionTranModel from "@/Component/Model/ActionTranModel";
+import { useFormik } from "formik";
+import moment from "moment";
+import { Label } from "@/Component/FormElement/Lable";
+import { useSelector } from "react-redux";
+import * as Yup from "yup";
+import {
+  HandleToastError,
+  HandleToastSuccess,
+} from "@/Component/Toast/ToastElement";
+import InputLang from "@/Component/FormElement/InputLang";
+import Cookies from "js-cookie";
+import { ic_Filter_close } from "@/Utils/svg";
+import {
+  Action2,
+  All2,
+  Apply2,
+  Approve2,
+  Approved2,
+  Areyousure2,
+  DateRange2,
+  Enterreasonhere2,
+  Filter2,
+  From2,
+  Pending2,
+  Reason2,
+  Reject2,
+  Rejected2,
+  RejectReasonARB2,
+  RejectReasonENG2,
+  RequestedAmount2,
+  RequestedDate2,
+  RequestedId2,
+  Reset2,
+  Status2,
+  thisWithdrawal2,
+  To2,
+  UserMobile2,
+  UserWithdrawal2,
+  WalletAmount2,
+} from "@/Data/Admin/Arabic";
+import {
+  Action1,
+  All1,
+  Apply1,
+  Approve1,
+  Approved1,
+  Areyousure1,
+  DateRange1,
+  Enterreasonhere1,
+  Filter1,
+  From1,
+  Pending1,
+  Reason1,
+  Reject1,
+  Rejected1,
+  RejectReasonARB1,
+  RejectReasonENG1,
+  RequestedAmount1,
+  RequestedDate1,
+  RequestedId1,
+  Reset1,
+  Status1,
+  thisWithdrawal1,
+  To1,
+  UserMobile1,
+  UserWithdrawal1,
+  WalletAmount1,
+} from "@/Data/Admin/English";
+const UserWithdrawalList = () => {
+  const [status, setStatus] = useState(Cookies.get("language_code"));
+  useEffect(() => {
+    setStatus(Cookies.get("language_code"));
+  }, [status]);
+  const route = useRouter();
+  const language = useSelector((state) => state.language);
+  const [userWithdrawal] = useUserWithdrawalMutation();
+  const [withdrawalReq] = useWithdrawalReqMutation();
+  const [actionItem, setActionItem] = useState({});
+  const dataTableRef = useRef(null);
+  const searchBoxRef = useRef(null);
+  const statusFilterRef = useRef(null);
+  const DateRangeMinRef = useRef(null);
+  const DateRangeMaxRef = useRef(null);
+  const paginationRef = useRef(null);
+  const infoRef = useRef(null);
+  const lengthMenuRef = useRef(null);
+  const { data: permission } = useSelector((state) => state.permission);
+  const { data: profileData } = useSelector((state) => state.profile);
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [filter, setFilter] = useState(false);
+  const [fundedMin, setFundedMin] = useState("");
+  const [fundedMax, setFundedMax] = useState("");
+
+  const statusCheck = (permission) => {
+    if (Cookies.get("role") === "Admin") {
+      return !profileData?.admin_roles?.some((role) =>
+        role.admin_permissions?.some(
+          (perm) => perm.permission_name === permission
+        )
+      );
+    }
+    return false;
+  };
+
+  const [initialValues, setInitialValues] = useState({
+    field_with_language: [],
+  });
+
+  const closeFunction = () => {
+    setActionItem({});
+    setInitialValues({ field_with_language: [] });
+  };
+  const formik = useFormik({
+    initialValues,
+    enableReinitialize: true,
+    validationSchema: Yup.object().shape({
+      field_with_language: Yup.array().of(
+        Yup.object().shape({
+          language_id: Yup.number().required(),
+          field_text: Yup.string().required("Reason is required"),
+        })
+      ),
+    }),
+    onSubmit: async (values) => {
+      const action = actionItem?.action;
+      const body = {
+        id: [actionItem?.data?.id],
+        data: {
+          ids: [actionItem?.data?.id],
+          status: action === "approve" ? 1 : 3,
+          ...(action === "reject" && {
+            field_with_language: values.field_with_language,
+          }),
+        },
+      };
+
+      const { data, error } = await withdrawalReq(body);
+      console.log(error);
+      if (data) {
+        closeFunction();
+        HandleToastSuccess(data.msg);
+        $("#main_table_transaction").DataTable().ajax.reload(null, false); // Reload the table without resetting pagination
+      } else if (error) {
+        HandleToastError(error.data.msg);
+        closeFunction();
+      }
+    },
+  });
+
+  const fetchData = async (data) => {
+    try {
+      const { data: resData } = await userWithdrawal({
+        ...data,
+        language1: 1,
+        language2: 2,
+      });
+      return resData?.status === 1 ? resData.data : null;
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+
+    const handleCheckboxClick = (e) => {
+      setDropdownSelect(false);
+
+      const id = $(e.target).data("id");
+      setAllIdOfTable((prev) => {
+        const newIds = [...prev];
+        if (e.target.checked) {
+          if (!newIds.includes(id)) {
+            newIds.push(id);
+          }
+        } else {
+          const index = newIds.indexOf(id);
+          setDropdownSelect(true);
+
+          if (index > -1) {
+            newIds.splice(index, 1);
+          }
+        }
+        return newIds;
+      });
+
+      const allChecked =
+        $(".row-checkbox:checked").length ===
+        $(".row-checkbox:not(:disabled)").length;
+      $("#select-all").prop("checked", allChecked);
+    };
+
+    const handleSelectAllClick = (e) => {
+      const isChecked = e.target.checked;
+      $(".row-checkbox:not(:disabled)")
+        .prop("checked", isChecked)
+        .trigger("change");
+    };
+
+    if (dataTableRef.current) {
+
+      // const initializeDataTable = () => {
+      if ($.fn.DataTable.isDataTable("#main_table_transaction")) {
+        $("#main_table_transaction").DataTable().destroy();
+      }
+
+      const table = new DataTable("#main_table_transaction", {
+        ajax: async (data, callback) => {
+          const content = await fetchData(data);
+          if (content) {
+            callback(content);
+          } else {
+            callback(null);
+            $("#main_table_transaction tbody").html(
+              '<tr><td colspan="9" class="dt-empty">Something went wrong, please try again later</td></tr>'
+            );
+          }
+        },
+        rowId: "id",
+        dom: "lrtip",
+        processing: true,
+        serverSide: true,
+        order: [[0, "desc"]],
+        columns: [
+          {
+            data: null,
+            orderable: false,
+            render: function (data, type, row) {
+              return `<input type="checkbox" class="row-checkbox" ${[1, 3].includes(row.Status) ? "disabled" : ""
+                } ${[1].includes(row.Status) ? "checked" : ""}  data-id="${row.id
+                }" />`;
+            },
+          },
+          { data: "id", name: "uwr.id" },
+          {
+            data: "withdraw_amount",
+            name: "withdraw_amount",
+            render: (data) => {
+              return Number(data).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              });
+            },
+          },
+          {
+            data: "phone",
+            name: "phone",
+            render: (data, type, row) => {
+              const rowDataAttribute = encodeURIComponent(JSON.stringify(row));
+              return statusCheck("view_user")
+                ? data
+                : `<span class="linkNum" data-item="${rowDataAttribute}">${data}</span>`;
+            },
+          },
+          { data: "wallet_amount", name: "wallet_amount" },
+          { data: "reason_en", name: "reason_en" },
+          { data: "reason_ar", name: "reason_ar" },
+          {
+            data: "createdAt",
+            name: "uwr.createdAt",
+            render: (data) => moment(data).format("DD-MM-YYYY HH:mm:ss"),
+          },
+          {
+            data: "status",
+            name: "uwr.status",
+            render: (data) => {
+              switch (data) {
+                case 1:
+                  return `<span class="approve statusText">${status == "ar" ? Approved2 : Approved1
+                    }</span>`;
+                case 2:
+                  return `<span class="pending statusText">${status == "ar" ? Pending2 : Pending1
+                    }</span>`;
+                case 3:
+                  return `<span class="reject statusText">${status == "ar" ? Rejected2 : Rejected1
+                    }</span>`;
+                default:
+                  return "";
+              }
+            },
+          },
+          {
+            data: "id",
+            name: "uwr.id",
+            orderable: false,
+            searchable: false,
+            render: (data, type, row) => {
+              const rowDataAttribute = encodeURIComponent(JSON.stringify(row));
+              return `<div class="tableBtn">
+                ${!statusCheck("approve_withdrawal")
+                  ? `
+                  <a href="/list_details?id=${data}" data-item="${rowDataAttribute}" class="Approvebutton ${row.status === 2 ? "" : "Disablebutton"
+                  }">${status == "ar" ? Approve2 : Approve1}</a>
+                  <a href="/list_details?id=${data}" data-item="${rowDataAttribute}" class="Rejectbutton ${row.status === 2 ? "" : "Disablebutton"
+                  }">${status == "ar" ? Reject2 : Reject1}</a>
+                `
+                  : ""
+                }
+              </div>`;
+            },
+          },
+        ],
+        drawCallback: () => {
+          $(".linkNum")
+            .off("click")
+            .on("click", function () {
+              const item = $(this).data("item");
+              route.push(
+                `/admin/appuser/details?id=${JSON.parse(decodeURIComponent(item)).user_id
+                }`
+              );
+            });
+
+          $(".Approvebutton")
+            .off("click")
+            .on("click", function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              const item = $(this).data("item");
+              setActionItem({
+                data: JSON.parse(decodeURIComponent(item)),
+                action: "approve",
+              });
+            });
+
+          $(".Rejectbutton")
+            .off("click")
+            .on("click", function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              const item = $(this).data("item");
+              const initValuesReason = (language.data || []).map(({ id }) => ({
+                language_id: id,
+                field_name: "reason",
+                field_text: "",
+              }));
+              setInitialValues((prevValues) => ({
+                ...prevValues,
+                field_with_language: initValuesReason,
+              }));
+              setActionItem({
+                data: JSON.parse(decodeURIComponent(item)),
+                action: "reject",
+              });
+            });
+        },
+        pagingType: "simple_numbers",
+        lengthMenu: [10, 25, 100],
+        infoCallback: (settings, start, end, max, total) => {
+          return `Showing ${start} to ${end} of ${total} entries (filtered from ${max} total entries)`;
+        },
+      });
+      $("#main_table_transaction tbody").on(
+        "change",
+        ".row-checkbox",
+        handleCheckboxClick
+      );
+      $("#select-all").on("change", handleSelectAllClick);
+
+      // Handle date range filtering
+      if (DateRangeMinRef.current && DateRangeMaxRef.current) {
+        $(DateRangeMinRef.current)
+          .add($(DateRangeMaxRef.current))
+          .on("input", function () {
+            const min = $(DateRangeMinRef.current).val() || "";
+            const max = $(DateRangeMaxRef.current).val() || "";
+
+            table.column(6).search(`${min}/${max}`, true, false).draw();
+          });
+      }
+
+      // Handle status filtering
+      if (statusFilterRef.current) {
+        $(statusFilterRef.current).on("change", function () {
+          const selectedStatus = $(this).val();
+          table.column(7).search(selectedStatus).draw();
+        });
+      }
+
+      // Handle search input
+      if (searchBoxRef.current) {
+        $(searchBoxRef.current).on("input", function () {
+          table.search(this.value).draw();
+        });
+      }
+      if (lengthMenuRef.current) {
+        $(lengthMenuRef.current).on("change", function () {
+          table.page.len(this.value).draw();
+        });
+      }
+    };
+
+    // Initialize DataTable
+    // if (dataTableRef.current) {
+    //   initializeDataTable();
+    // }
+
+    // Cleanup function to destroy DataTable on unmount
+    return () => {
+      if ($.fn.DataTable.isDataTable("#main_table_transaction")) {
+        $("#main_table_transaction").DataTable().destroy();
+        $("#main_table_transaction tbody").off(
+          "change",
+          ".row-checkbox",
+          handleCheckboxClick
+        );
+        $("#select-all").off("change", handleSelectAllClick);
+      }
+    };
+  }, [language.data, status]);
+
+  const applyFilters = () => {
+    const table = $("#main_table_transaction").DataTable();
+    if (selectedStatus === "") {
+      table.column(7).search("").draw();
+    } else {
+      table.column(7).search(selectedStatus).draw();
+    }
+
+    // Apply funded filter
+    if (DateRangeMinRef.current && DateRangeMaxRef.current) {
+      const min = $(DateRangeMinRef.current).val() || "";
+      const max = $(DateRangeMaxRef.current).val() || "";
+      if (max === "" && min === "") {
+        table.column(6).search(``, true, false).draw();
+      } else {
+        table.column(6).search(`${min}/${max}`, true, false).draw();
+      }
+    } else {
+      table.column(6).search("").draw();
+    }
+    setFilter(false);
+  };
+
+  const resetFilters = () => {
+    setSelectedStatus("");
+    setFundedMin("");
+    setFundedMax("");
+    if (statusFilterRef.current) statusFilterRef.current.value = "";
+    const table = $("#main_table_transaction").DataTable();
+    table.search("").columns().search("").draw();
+    setFilter(false);
+  };
+
+  return (
+    <PageLayout>
+      <PageHeader
+        title={status == "ar" ? UserWithdrawal2 : UserWithdrawal1}
+        searchType={"text"}
+        ref={searchBoxRef}
+        filterData={status === "ar" ? Filter2 : Filter1}
+        onFilter={() => setFilter(!filter)}
+      />
+
+      {filter && (
+        <div className={status == "ar" ? style.MainDivForFilterOption1 : style.MainDivForFilterOption}>
+          <div className={style.MainDivFilterText}>
+            <div className={style.submaindivforfiltretext}>
+              {status == "ar" ? Filter2 : Filter1}
+            </div>
+            <div onClick={() => setFilter(false)} className={style.closeicon}>
+              {ic_Filter_close.icon()}
+            </div>
+          </div>
+          <div className={style.ScroleMainDiv}>
+            <div>
+              <div ref={statusFilterRef} className={style.TitleFilter}>
+                {status == "ar" ? Status2 : Status1}
+                <div className={style.MainDivCheckboxFilter}>
+                  <input
+                    type="radio"
+                    name="statusFilter"
+                    value=""
+                    checked={selectedStatus === ""}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                  />
+                  <label className={style.OptionFilter}>
+                    {status == "ar" ? All2 : All1}
+                  </label>
+                </div>
+                <div className={style.MainDivCheckboxFilter}>
+                  <input
+                    type="radio"
+                    name="statusFilter"
+                    value="1"
+                    checked={selectedStatus === "1"}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                  />
+                  <label className={style.OptionFilter}>
+                    {status == "ar" ? Approved2 : Approved1}
+                  </label>
+                </div>
+                <div className={style.MainDivCheckboxFilter}>
+                  <input
+                    type="radio"
+                    name="statusFilter"
+                    value="2"
+                    checked={selectedStatus === "2"}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                  />
+                  <label className={style.OptionFilter}>
+                    {status == "ar" ? Pending2 : Pending1}
+                  </label>
+                </div>
+                <div className={style.MainDivCheckboxFilter}>
+                  <input
+                    type="radio"
+                    name="statusFilter"
+                    value="3"
+                    checked={selectedStatus === "3"}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                  />
+                  <label className={style.OptionFilter}>
+                    {status == "ar" ? Rejected2 : Rejected1}
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className={style.TitleFilter}>
+                {status == "ar" ? DateRange2 : DateRange1}
+              </div>
+
+              <div className={style.mainDivForrengeFilter}>
+                <div>
+                  <div className={style.TitleFilterFT}>
+                    {status == "ar" ? From2 : From1}
+                  </div>
+                  <input
+                    type="datetime-local"
+                    value={fundedMin}
+                    ref={DateRangeMinRef}
+                    onChange={(e) => setFundedMin(e.target.value)}
+                    placeholder="Min"
+                    className={style.FilterNumber}
+                  />
+                </div>
+
+                <div>
+                  <div className={style.TitleFilterFT}>
+                    {status == "ar" ? To2 : To1}
+                  </div>
+                  <input
+                    type="datetime-local"
+                    value={fundedMax}
+                    ref={DateRangeMaxRef}
+                    onChange={(e) => setFundedMax(e.target.value)}
+                    placeholder="Max"
+                    className={style.FilterNumber}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className={style.BTNMainFilter}>
+            <button className={style.ResetBtnFilter} onClick={resetFilters}>
+              {status == "ar" ? Reset2 : Reset1}
+            </button>
+            <button className={style.ApplyBtnFilter} onClick={applyFilters}>
+              {status == "ar" ? Apply2 : Apply1}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* <div className="status-filter" style={{ marginRight: '10px' }}>
+        <label>Status: </label>
+        <select ref={statusFilterRef} className="status-filter-dropdown">
+          <option value="">All</option>
+          <option value="1">Approved</option>
+          <option value="2">Pending</option>
+          <option value="3">Rejected</option>
+        </select>
+      </div>
+
+      <div className="funded-filter">
+        <label>Date Range: </label>
+        <input
+          className="status-filter-dropdown"
+          type="datetime-local"
+          ref={DateRangeMinRef}
+          placeholder="Min"
+          // onChange={handleStartChange}
+          style={{ marginRight: '10px', width: '60px' }}
+        />
+
+        <input
+          className="status-filter-dropdown"
+          type="datetime-local"
+          ref={DateRangeMaxRef}
+          placeholder="Min"
+          // onChange={handleStartChange}
+          style={{ marginRight: '10px', width: '60px' }}
+        />
+      </div> */}
+      <div className="main_table_parent">
+        <table
+          id="main_table_transaction"
+          ref={dataTableRef}
+          className={`${style.maindivtable} display hover stripe cell-border`}
+          style={{ width: "100%" }}
+        >
+          <thead>
+            <tr className="no_color">
+              <th>
+                <input type="checkbox" id="select-all" />
+              </th>
+              <th>{status == "ar" ? RequestedId2 : RequestedId1}</th>
+              <th>{status == "ar" ? RequestedAmount2 : RequestedAmount1}</th>
+              <th>{status == "ar" ? UserMobile2 : UserMobile1}</th>
+              <th>{status == "ar" ? WalletAmount2 : WalletAmount1}</th>
+              <th className="w-25">
+                {status == "ar" ? RejectReasonENG2 : RejectReasonENG1}
+              </th>
+              <th className="w-25">
+                {" "}
+                {status == "ar" ? RejectReasonARB2 : RejectReasonARB1}
+              </th>
+              <th className="w-25">
+                {" "}
+                {status == "ar" ? RequestedDate2 : RequestedDate1}
+              </th>
+              <th> {status == "ar" ? Status2 : Status1}</th>
+              <th>
+                {statusCheck("approve_withdrawal")
+                  ? ""
+                  : `${status == "ar" ? Action2 : Action1}`}
+              </th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+      <TableLengthElement ref={lengthMenuRef} />
+      <form onSubmit={formik.handleSubmit}>
+        <ActionTranModel
+          open={actionItem}
+          setOpen={setActionItem}
+          closeFunction={closeFunction}
+        >
+          {status == "ar" ? Areyousure2 : Areyousure1} {actionItem?.action}{" "}
+          {status == "ar" ? thisWithdrawal2 : thisWithdrawal1}
+          {actionItem?.action === "reject" && (
+            <>
+              {language?.data?.map((lang, i) => (
+                <div key={i}>
+                  <Label htmlFor={`field_with_language[${i}].field_text`}>
+                    {`${status === "ar" ? Reason2 : Reason1} (${lang.language}):`}
+                  </Label>
+                  <InputLang
+                    placeholder={status === "ar" ? Enterreasonhere2 : Enterreasonhere1}
+                    name={`field_with_language[${i}].field_text`}
+                    value={formik.values.field_with_language[i]?.field_text}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                  />
+                  {formik.errors.field_with_language &&
+                    formik.errors.field_with_language[i]?.field_text && (
+                      <span className={style.error}>
+                        {formik.errors.field_with_language[i].field_text}
+                      </span>
+                    )}
+                </div>
+              ))}
+            </>
+          )}
+        </ActionTranModel>
+      </form>
+    </PageLayout>
+  );
+};
+
+export default UserWithdrawalList;

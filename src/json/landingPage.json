@@ -1,0 +1,115 @@
+{
+  "service": [
+    {
+      "title": "Web Development",
+      "imageUrl": "assets/images/web1.png"
+    },
+    {
+      "title": "Mobile Development",
+      "imageUrl": "assets/images/m1.png"
+    },
+    {
+      "title": "UI/UX Design",
+      "imageUrl": "assets/images/uiux.jpg"
+    }
+  ],
+  "portfolio": [
+    {
+      "id": "1",
+      "title": "Doctor appointment app",
+      "imageUrl": "assets/images/Doctor.png",
+      "type": "Mobile Apps",
+      "responsibility": ["Mobile Development", "UI/UX Design"]
+    },
+    {
+      "id": "3",
+      "title": "Meditation master app",
+      "imageUrl": "assets/images/Meditation-1.png",
+      "type": "Mobile Apps",
+      "responsibility": ["Mobile Development", "UI/UX Design"]
+    },
+    {
+      "id": "2",
+      "title": "Dating App",
+      "imageUrl": "assets/images/dating.png",
+      "type": "Mobile Apps",
+      "responsibility": ["Mobile Development", "UI/UX Design"],
+      "credit": ""
+    },
+    {
+      "id": "2",
+      "title": "Social Media",
+      "imageUrl": "assets/images/social_media.png",
+      "type": "Mobile Apps",
+      "responsibility": ["Mobile Development", "UI/UX Design"],
+      "credit": ""
+    }
+  ],
+  "advantage": [
+    [
+      {
+        "title": "Communicative",
+        "description": "We communicate our project ideas and progress to make it clear.",
+        "imageUrl": "assets/images/Communicative.png"
+      },
+      {
+        "title": "Management",
+        "description": "We manage our project properly to make our project done well.",
+        "imageUrl": "assets/images/Management.png"
+      }
+    ],
+    [
+      {
+        "title": "Collaborative​",
+        "description": "Our team are very collaborative to make our project done well.",
+        "imageUrl": "assets/images/Collaborative.png"
+      },
+      {
+        "title": "Favourite",
+        "description": "We've did so many project and all of our client love it.",
+        "imageUrl": "assets/images/Favourite.png"
+      }
+    ]
+  ],
+  "testimonial": [
+    {
+      "name": "Randall Perez",
+      "company": "Owner, capX It service",
+      "testimoni": "Cyberwave is the best team I've ever worked with. They are very professional and always deliver on time.",
+      "imageUrl": "assets/images/Backend1.jpg"
+    },
+    {
+      "name": "John Moore",
+      "company": "Tech Lead, Arena App",
+      "testimoni": "Good Communication, transparent is everything he does.",
+      "imageUrl": "assets/images/Backend2.jpg"
+    }
+  ],
+  "work": [
+    {
+      "id": "1",
+      "title": "upwork",
+      "imageUrl": "assets/images/Upwork.png"
+    },
+    {
+      "id": "2",
+      "title": "clutch",
+      "imageUrl": "assets/images/clutch.png"
+    },
+    {
+      "id": "4",
+      "title": "Google",
+      "imageUrl": "assets/images/Google.png"
+    },
+    {
+      "id": "3",
+      "title": "goodfirms",
+      "imageUrl": "assets/images/Goodfirms.png"
+    },
+    {
+      "id": "5",
+      "title": "freeelancerlogo",
+      "imageUrl": "assets/images/freelancerlogo.png"
+    }
+  ]
+}
